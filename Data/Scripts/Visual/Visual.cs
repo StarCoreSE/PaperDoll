@@ -60,9 +60,55 @@ namespace klime.Visual
 
         public void DoCleanup()
         {
-            // unnecessary?
+
+            HashSet<IMyEntity> subparts = new HashSet<IMyEntity>();
+            foreach (var fatblock in grid.GetFatBlocks())
+            {
+                IMyFunctionalBlock fBlock = fatblock as IMyFunctionalBlock;
+                if (fBlock != null)
+                {
+                    fBlock.Enabled = false;
+                }
+
+                IMyExhaustBlock exhaust = fatblock as IMyExhaustBlock;
+                if (exhaust != null)
+                {
+                    exhaust.StopEffects();
+                }
+
+            }
+
+            if (grid.IsPowered)
+            {
+                grid.SwitchPower();
+            }
+
+         //  grid.ChangeGridOwnership(MyAPIGateway.Session.Player.IdentityId, MyOwnershipShareModeEnum.Faction);
+         //
+         //
+         //  string whiteHex = "#FFFFFF";
+         //  Vector3 whiteHSVOffset = MyColorPickerConstants.HSVToHSVOffset(ColorExtensions.ColorToHSV(ColorExtensions.HexToColor(whiteHex)));
+         //  whiteHSVOffset = new Vector3((float)Math.Round(whiteHSVOffset.X, 2), (float)Math.Round(whiteHSVOffset.Y, 2), (float)Math.Round(whiteHSVOffset.Z, 2));
+         //
+         //  List<IMySlimBlock> allBlocks = new List<IMySlimBlock>();
+         //  IMyCubeGrid iGrid = grid as IMyCubeGrid;
+         //  iGrid.GetBlocks(allBlocks);
+
+            //grid.ColorBlocks(grid.Min, grid.Max, whiteHSVOffset, false, false);
+            ////iGrid.ColorBlocks(iGrid.Min, iGrid.Max, whiteHSVOffset);
+            ////grid.ColorGrid(whiteHSVOffset, false, false);
+
+         //  foreach (var block in allBlocks)
+         //  {
+         //      block.Dithering = 0.1f;
+         //      //grid.ChangeColorAndSkin(grid.GetCubeBlock(block.Position), whiteHSVOffset);
+         //  }
+         //  //grid.Render.Transparency = -0.01f;
+
+
         }
-    }
+    
+}
 
     public class EntRender
     {
