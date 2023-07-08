@@ -231,26 +231,48 @@ namespace klime.Visual
 
         public void GenerateClientGrids()
         {
-            var realOB = realGrid.GetObjectBuilder() as MyObjectBuilder_CubeGrid;
-            MyEntities.RemapObjectBuilder(realOB);
-            realOB.CreatePhysics = false;
-            MyAPIGateway.Entities.CreateFromObjectBuilderParallel(realOB, false, CompleteCall);
+            try
+            {
+                var realOB = realGrid.GetObjectBuilder() as MyObjectBuilder_CubeGrid;
+                MyEntities.RemapObjectBuilder(realOB);
+                realOB.CreatePhysics = false;
+                MyAPIGateway.Entities.CreateFromObjectBuilderParallel(realOB, false, CompleteCall);
+            }
+            catch (Exception e)
+            {
+                // Log the error message for debugging purposes
+                MyLog.Default.WriteLine($"Error generating client grids: {e.Message}");
+                // Show an on-screen message to the player
+                MyAPIGateway.Utilities.ShowNotification("An error occurred while generating client grids. Please check the log for more details.", 5000, MyFontEnum.Red);
+            }
         }
+
 
         private void CompleteCall(IMyEntity obj)
         {
-            if (isClosed) return;
-            var grid = (MyCubeGrid)obj;
-            grid.SyncFlag = false;
-            grid.Save = false;
-            grid.Render.NearFlag = false;
-            grid.RemoveFromGamePruningStructure();
-            grid.Render.CastShadows = false;
-            grid.Render.FadeIn = false;
-            grid.DisplayName = "";
-            MyAPIGateway.Entities.AddEntity(grid);
-            visGrid = new GridG(new GridR(grid), rotOffset);
+            try
+            {
+                if (isClosed) return;
+                var grid = (MyCubeGrid)obj;
+                grid.SyncFlag = false;
+                grid.Save = false;
+                grid.Render.NearFlag = false;
+                grid.RemoveFromGamePruningStructure();
+                grid.Render.CastShadows = false;
+                grid.Render.FadeIn = false;
+                grid.DisplayName = "";
+                MyAPIGateway.Entities.AddEntity(grid);
+                visGrid = new GridG(new GridR(grid), rotOffset);
+            }
+            catch (Exception e)
+            {
+                // Log the error message for debugging purposes
+                MyLog.Default.WriteLine($"Error in CompleteCall: {e.Message}");
+                // Show an on-screen message to the player
+                MyAPIGateway.Utilities.ShowNotification("An error occurred while completing the call. Please check the log for more details.", 5000, MyFontEnum.Red);
+            }
         }
+
 
         public void Update()
         {
