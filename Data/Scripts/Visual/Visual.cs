@@ -14,6 +14,9 @@ using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
 using CoreSystems.Api;
+using ParallelTasks;
+
+
 
 
 namespace klime.Visual
@@ -29,8 +32,10 @@ namespace klime.Visual
         Vector3D relTrans;
         Vector3D relForward;
         Vector3D relUp;
+        internal Task GridTask = new Task();
 
-        public GridR(MyCubeGrid grid , EntRender entRender = null)
+
+        public GridR(MyCubeGrid grid, EntRender entRender = null)
         {
             this.grid = grid;
             this.entRender = entRender;
@@ -45,17 +50,18 @@ namespace klime.Visual
         {
             if (grid.MainCockpit != null)
             {
-                var finalForward = Vector3D.TransformNormal(relForward , renderMatrix);
-                var finalUp = Vector3D.TransformNormal(relUp , renderMatrix);
-                var finalWM = MatrixD.CreateWorld(renderMatrix.Translation , finalForward , finalUp);
+                var finalForward = Vector3D.TransformNormal(relForward, renderMatrix);
+                var finalUp = Vector3D.TransformNormal(relUp, renderMatrix);
+                var finalWM = MatrixD.CreateWorld(renderMatrix.Translation, finalForward, finalUp);
 
-                finalWM.Translation += Vector3D.TransformNormal(relTrans , finalWM);
+                finalWM.Translation += Vector3D.TransformNormal(relTrans, finalWM);
                 grid.WorldMatrix = finalWM;
             }
             else
             {
-                renderMatrix.Translation += Vector3D.TransformNormal(relTrans , renderMatrix);
+                renderMatrix.Translation += Vector3D.TransformNormal(relTrans, renderMatrix);
                 grid.WorldMatrix = renderMatrix;
+
             }
         }
 
@@ -73,10 +79,10 @@ namespace klime.Visual
 
             if (grid.MainCockpit != null)
             {
-                relTrans = Vector3D.TransformNormal(grid.WorldMatrix.Translation - grid.PositionComp.WorldAABB.Center ,
+                relTrans = Vector3D.TransformNormal(grid.WorldMatrix.Translation - grid.PositionComp.WorldAABB.Center,
                     MatrixD.Transpose(grid.WorldMatrix));
-                relForward = Vector3D.TransformNormal(grid.MainCockpit.WorldMatrix.Forward , MatrixD.Transpose(grid.WorldMatrix));
-                relUp = Vector3D.TransformNormal(grid.MainCockpit.WorldMatrix.Up , MatrixD.Transpose(grid.WorldMatrix));
+                relForward = Vector3D.TransformNormal(grid.MainCockpit.WorldMatrix.Forward, MatrixD.Transpose(grid.WorldMatrix));
+                relUp = Vector3D.TransformNormal(grid.MainCockpit.WorldMatrix.Up, MatrixD.Transpose(grid.WorldMatrix));
 
                 relTrans *= scale;
                 relForward *= scale;
@@ -84,7 +90,7 @@ namespace klime.Visual
             }
             else
             {
-                relTrans = Vector3D.TransformNormal(grid.WorldMatrix.Translation - grid.PositionComp.WorldAABB.Center ,
+                relTrans = Vector3D.TransformNormal(grid.WorldMatrix.Translation - grid.PositionComp.WorldAABB.Center,
                     MatrixD.Transpose(grid.WorldMatrix));
 
                 relTrans *= scale;
@@ -98,53 +104,64 @@ namespace klime.Visual
         public void DoCleanup()
         {
 
-            HashSet<IMyEntity> subparts = new HashSet<IMyEntity>();
-            foreach (var fatblock in grid.GetFatBlocks())
-            {
-                IMyFunctionalBlock fBlock = fatblock as IMyFunctionalBlock;
-                if (fBlock != null)
-                {
-                    fBlock.Enabled = false;
-                }
-
-                IMyExhaustBlock exhaust = fatblock as IMyExhaustBlock;
-                if (exhaust != null)
-                {
-                    exhaust.StopEffects();
-                }
-
-            }
-
-            if (grid.IsPowered)
-            {
-                grid.SwitchPower();
-            }
-
-            grid.ChangeGridOwnership(MyAPIGateway.Session.Player.IdentityId , MyOwnershipShareModeEnum.Faction);
+            //  HashSet<IMyEntity> subparts = new HashSet<IMyEntity>();
+            //  foreach (var fatblock in grid.GetFatBlocks())
+            //  {
+            //      IMyFunctionalBlock fBlock = fatblock as IMyFunctionalBlock;
+            //      if (fBlock != null)
+            //      {
+            //          fBlock.Enabled = false;
+            //      }
+            //
+            //      IMyExhaustBlock exhaust = fatblock as IMyExhaustBlock;
+            //      if (exhaust != null)
+            //      {
+            //          exhaust.StopEffects();
+            //      }
+            //
+            //  }
+            //
+            //  if (grid.IsPowered)
+            //  {
+            //      grid.SwitchPower();
+            //  }
 
 
-            string whiteHex = "#FFFFFF";
-            Vector3 whiteHSVOffset = MyColorPickerConstants.HSVToHSVOffset(ColorExtensions.ColorToHSV(ColorExtensions.HexToColor(whiteHex)));
-            whiteHSVOffset = new Vector3((float)Math.Round(whiteHSVOffset.X , 2) , (float)Math.Round(whiteHSVOffset.Y , 2) , (float)Math.Round(whiteHSVOffset.Z , 2));
 
-            List<IMySlimBlock> allBlocks = new List<IMySlimBlock>();
-            IMyCubeGrid iGrid = grid as IMyCubeGrid;
-            iGrid.GetBlocks(allBlocks);
+            //   grid.ChangeGridOwnership(MyAPIGateway.Session.Player.IdentityId , MyOwnershipShareModeEnum.Faction);
+            //
+            //
+            //   string whiteHex = "#FFFFFF";
+            //   Vector3 whiteHSVOffset = MyColorPickerConstants.HSVToHSVOffset(ColorExtensions.ColorToHSV(ColorExtensions.HexToColor(whiteHex)));
+            //   whiteHSVOffset = new Vector3((float)Math.Round(whiteHSVOffset.X , 2) , (float)Math.Round(whiteHSVOffset.Y , 2) , (float)Math.Round(whiteHSVOffset.Z , 2));
+            //
+            //   List<IMySlimBlock> allBlocks = new List<IMySlimBlock>();
+            //   IMyCubeGrid iGrid = grid as IMyCubeGrid;
+            //   iGrid.GetBlocks(allBlocks);
 
             //grid.ColorBlocks(grid.Min, grid.Max, whiteHSVOffset, false, false);
             ////iGrid.ColorBlocks(iGrid.Min, iGrid.Max, whiteHSVOffset);
             ////grid.ColorGrid(whiteHSVOffset, false, false);
 
-            foreach (var block in allBlocks)
-            {
-                block.Dithering = 0.1f;
-                //grid.ChangeColorAndSkin(grid.GetCubeBlock(block.Position), whiteHSVOffset);
-            }
+            //  foreach (var block in allBlocks)
+            //  {
+            //      block.Dithering = 0.1f;
+            //      //grid.ChangeColorAndSkin(grid.GetCubeBlock(block.Position), whiteHSVOffset);
+            //  }
             //grid.Render.Transparency = -0.01f;
 
 
         }
+        // internal void CheckDirtyGridInfos(bool mainThread = false)
+        // {
+        //     if (DirtyGrid)
+        //     {
+        //         GridTask = MyAPIGateway.Parallel.StartBackground(UpdateGrids);
+        //     }
+        // }
     }
+
+
 
     //Render elements - damage state etc
     public class EntRender
@@ -162,7 +179,7 @@ namespace klime.Visual
     public class GridG
     {
         public List<GridR> gridGroup;
-        public bool doneInitialCleanup = false;
+        public bool doneInitialCleanup = true;
         public bool doneRescale = false;
         public double rotationForward;
         public double rotationUp;
@@ -171,15 +188,15 @@ namespace klime.Visual
         public List<IMyCubeBlock> DelList = new List<IMyCubeBlock>();
         public List<Vector3I> SlimList = new List<Vector3I>();
 
-        public Dictionary<IMyCubeBlock , int> DelDict = new Dictionary<IMyCubeBlock , int>();
+        public Dictionary<IMyCubeBlock, int> DelDict = new Dictionary<IMyCubeBlock, int>();
 
-        public GridG(List<GridR> gridGroup , double rotationForwardBase)
+        public GridG(List<GridR> gridGroup, double rotationForwardBase)
         {
             this.gridGroup = new List<GridR>(gridGroup); //Allocation?
             this.rotationForwardBase = rotationForwardBase;
         }
 
-        public GridG(GridR gridR , double rotationForwardBase)
+        public GridG(GridR gridR, double rotationForwardBase)
         {
 
             //Adds first grid
@@ -241,18 +258,18 @@ namespace klime.Visual
                         else
                         {
                             slim.Dithering = 2.5f;
-                            
-                                //MyVisualScriptLogicProvider.SetHighlight(slim.FatBlock.Name , true, 10 , 5 , Color.Red);
-                            
+
+                            //MyVisualScriptLogicProvider.SetHighlight(slim.FatBlock.Name , true, 10 , 5 , Color.Red);
+
                             //DelList.Add(slim.FatBlock);
                             //MyAPIGateway.Utilities.ShowMessage("Fat Block Removed", "");
-                            
+
                             if (slim.FatBlock.Mass > 1500)
                             {
                                 if (!DelDict.ContainsKey(slim.FatBlock))
                                 {
-                                    MyVisualScriptLogicProvider.SetHighlightLocal(slim.FatBlock.Name , 10 , 10 , Color.Red);
-                                    DelDict.Add(slim.FatBlock , timer + 200);
+                                    MyVisualScriptLogicProvider.SetHighlightLocal(slim.FatBlock.Name, 10, 10, Color.Red);
+                                    DelDict.Add(slim.FatBlock, timer + 200);
                                 }
 
                             }
@@ -260,7 +277,7 @@ namespace klime.Visual
                             {
                                 if (!DelDict.ContainsKey(slim.FatBlock))
                                 {
-                                    DelDict.Add(slim.FatBlock , (timer + 10));
+                                    DelDict.Add(slim.FatBlock, (timer + 10));
                                 }
 
                             }
@@ -272,7 +289,7 @@ namespace klime.Visual
             }
         }
 
-        public void UpdateMatrix(MatrixD renderMatrix , MatrixD rotMatrix)
+        public void UpdateMatrix(MatrixD renderMatrix, MatrixD rotMatrix)
         {
 
             if (!doneRescale || !doneInitialCleanup)
@@ -284,7 +301,7 @@ namespace klime.Visual
 
             foreach (var fatblock in DelDict.Keys)
             {
-                if (DelDict[ fatblock ] == timer)
+                if (DelDict[fatblock] == timer)
                 {
                     fatblock.Close();
                     DelList.Add(fatblock);
@@ -312,12 +329,14 @@ namespace klime.Visual
             //}
 
 
-            //this.rotationForward = rotationForwardBase + rotationForward;
+            this.rotationForward = rotationForwardBase + rotationForward;
             //this.rotationUp = rotationUp;
             var rotateMatrix = MatrixD.CreateRotationY(rotationForwardBase);
+
             renderMatrix = rotateMatrix * renderMatrix;
 
             var origTranslation = renderMatrix.Translation;
+            var origRotation = renderMatrix.Rotation;
             renderMatrix = rotMatrix * renderMatrix;
             renderMatrix.Translation = origTranslation;
 
@@ -344,7 +363,7 @@ namespace klime.Visual
         public double yOffset;
         public double rotOffset;
         int timerRot = 0;
-        public EntVis(MyCubeGrid realGrid , double xOffset , double yOffset , double rotOffset)
+        public EntVis(MyCubeGrid realGrid, double xOffset, double yOffset, double rotOffset)
         {
             this.realGrid = realGrid;
             if (realGrid.MainCockpit != null)
@@ -367,20 +386,15 @@ namespace klime.Visual
 
         private void RegisterEvents()
         {
-            UpdateGridPacket regGridPacket = new UpdateGridPacket(realGrid.EntityId , RegUpdateType.Add);
+            UpdateGridPacket regGridPacket = new UpdateGridPacket(realGrid.EntityId, RegUpdateType.Add);
             var byteArray = MyAPIGateway.Utilities.SerializeToBinary(regGridPacket);
-            MyAPIGateway.Multiplayer.SendMessageTo(netID , byteArray , MyAPIGateway.Multiplayer.ServerId);
+            MyAPIGateway.Multiplayer.SendMessageTo(netID, byteArray, MyAPIGateway.Multiplayer.ServerId);
 
         }
 
         public void BlockRemoved(Vector3I position)
         {
-
-            if (visGrid != null)
-            {
-                visGrid.DoBlockRemove(position);
-            }
-            
+            visGrid?.DoBlockRemove(position);
         }
 
         public void GenerateClientGrids()
@@ -389,24 +403,41 @@ namespace klime.Visual
             var realOB = realGrid.GetObjectBuilder() as MyObjectBuilder_CubeGrid;
             MyEntities.RemapObjectBuilder(realOB); //Remap to avoid duplicate id
 
+
+            // Darkstar's contribution for removing all blocks with no entity id, which happens to be mostly normal armor blocks.
+            //  for (int i = realOB.CubeBlocks.Count - 1; i >= 0; i--)
+            //  {
+            //      if (realOB.CubeBlocks[i].EntityId == 0)
+            //      {
+            //          realOB.CubeBlocks.RemoveAtFast(i);
+            //      }
+            //
+            //
+            //  }
+
+            
+            realOB.DestructibleBlocks = false;
             realOB.CreatePhysics = false;
-            MyAPIGateway.Entities.CreateFromObjectBuilderParallel(realOB , false , completeCall);
+            MyAPIGateway.Entities.CreateFromObjectBuilderParallel(realOB, false, CompleteCall);
 
         }
 
-        private void completeCall(IMyEntity obj)
+        private void CompleteCall(IMyEntity obj)
         {
             if (isClosed) return; //if grid is closed don't
             MyCubeGrid visGridCubeGrid = obj as MyCubeGrid;
             visGridCubeGrid.SyncFlag = false;
             visGridCubeGrid.Save = false;
+            visGridCubeGrid.Render.NearFlag = false;
             visGridCubeGrid.RemoveFromGamePruningStructure();
             visGridCubeGrid.Render.CastShadows = false;
+            visGridCubeGrid.Render.FadeIn = false;
             visGridCubeGrid.DisplayName = "";
+            //visGridCubeGrid.IsPreview = true;
             MyAPIGateway.Entities.AddEntity(visGridCubeGrid);
 
             GridR gridR = new GridR(visGridCubeGrid);
-            visGrid = new GridG(gridR , rotOffset);
+            visGrid = new GridG(gridR, rotOffset);
         }
 
         public void Update()
@@ -429,11 +460,14 @@ namespace klime.Visual
                 var moveFactor = 0.6 * playerCamera.FovWithZoom;
                 renderMatrix.Translation += renderMatrix.Forward * (0.1 / moveFactor) + renderMatrix.Right * xOffset + renderMatrix.Down * yOffset;
 
+
+
                 MatrixD rotMatrix = MatrixD.Identity;
                 //Rotation - check bug
 
                 if (realGrid.MainCockpit != null)
                 {
+                    //rotMatrix = realGrid.MainCockpit.WorldMatrix * MatrixD.Normalize(MatrixD.Invert(realGridBaseMatrix));
                     rotMatrix = realGrid.MainCockpit.WorldMatrix * MatrixD.Normalize(MatrixD.Invert(realGridBaseMatrix));
                 }
 
@@ -442,7 +476,7 @@ namespace klime.Visual
                     rotMatrix = realGrid.WorldMatrix * MatrixD.Normalize(MatrixD.Invert(realGridBaseMatrix));
                 }
 
-                visGrid.UpdateMatrix(renderMatrix , rotMatrix);
+                visGrid.UpdateMatrix(renderMatrix, rotMatrix);
 
             }
 
@@ -473,20 +507,20 @@ namespace klime.Visual
             }
         }
 
-        public double AngleBetweenVectorsGrid(Vector3D vectorA , Vector3D vectorB , Vector3D planeNormal)
+        public double AngleBetweenVectorsGrid(Vector3D vectorA, Vector3D vectorB, Vector3D planeNormal)
         {
             vectorA = Vector3D.Normalize(vectorA);
             vectorB = Vector3D.Normalize(vectorB);
             planeNormal = Vector3D.Normalize(planeNormal);
 
-            PlaneD plane = new PlaneD(Vector3D.Zero , planeNormal);
-            double angle = MyUtils.GetAngleBetweenVectors(vectorA , vectorB);
-            double sign = Vector3D.Dot(plane.Normal , vectorB);
+            PlaneD plane = new PlaneD(Vector3D.Zero, planeNormal);
+            double angle = MyUtils.GetAngleBetweenVectors(vectorA, vectorB);
+            double sign = Vector3D.Dot(plane.Normal, vectorB);
 
-            //if (sign < 0)
-            //{
-            //    angle = -angle;
-            //}
+            //  if (sign < 0)
+            //  {
+            //      angle = -angle;
+            //  }
 
             return angle;
         }
@@ -502,9 +536,9 @@ namespace klime.Visual
                 }
             }
 
-            UpdateGridPacket updateGridPacket = new UpdateGridPacket(realGrid.EntityId , RegUpdateType.Remove);
+            UpdateGridPacket updateGridPacket = new UpdateGridPacket(realGrid.EntityId, RegUpdateType.Remove);
             var byteArray = MyAPIGateway.Utilities.SerializeToBinary(updateGridPacket);
-            MyAPIGateway.Multiplayer.SendMessageTo(netID , byteArray , MyAPIGateway.Multiplayer.ServerId);
+            MyAPIGateway.Multiplayer.SendMessageTo(netID, byteArray, MyAPIGateway.Multiplayer.ServerId);
 
             isClosed = true;
 
@@ -581,6 +615,13 @@ namespace klime.Visual
         Remove
     }
 
+    public enum RequestPaperDoll
+    {
+        On,
+        Off
+
+    }
+
     public enum ViewState
     {
         Idle,
@@ -612,6 +653,7 @@ namespace klime.Visual
         int timer = 0;
         bool validInputThisTick = false;
         public ViewState viewState = ViewState.Idle;
+        public RequestPaperDoll requestPaperDoll = RequestPaperDoll.Off;    
         List<EntVis> allVis = new List<EntVis>();
 
         //API
@@ -619,7 +661,7 @@ namespace klime.Visual
 
         public override void Init(MyObjectBuilder_SessionComponent sessionComponent)
         {
-            
+
         }
 
         public override void LoadData()
@@ -629,16 +671,16 @@ namespace klime.Visual
 
             if (MyAPIGateway.Session.IsServer)
             {
-                MyAPIGateway.Multiplayer.RegisterSecureMessageHandler(netID , NetworkHandler);
+                MyAPIGateway.Multiplayer.RegisterSecureMessageHandler(netID, NetworkHandler);
             }
 
-            MyAPIGateway.Multiplayer.RegisterSecureMessageHandler(feedbackNetID , FeedbackHandler);
+            MyAPIGateway.Multiplayer.RegisterSecureMessageHandler(feedbackNetID, FeedbackHandler);
 
             if (!MyAPIGateway.Utilities.IsDedicated)
             {
                 wcAPI = new WcApi();
 
-                wcAPI.Load(WCRegistered,true);
+                wcAPI.Load(WCRegistered, true);
             }
 
         }
@@ -676,10 +718,28 @@ namespace klime.Visual
                 validInputThisTick = false;
             }
 
-            //Check if F2 is pressed
+            //always on
+
+            //   if (viewState != ViewState.Locked)
+            //   {
+            //       viewState = ViewState.SearchingWC;
+            //   }
+            //
+            //   else if (viewState == ViewState.Locked)
+            //   {
+            //       //viewState = ViewState.GoToIdleWC;
+            //   }
+
+
+
+
+
+
+            //Check if T is pressed
             if (validInputThisTick && IsAdmin(MyAPIGateway.Session.Player))
             {
-                if (MyAPIGateway.Input.IsNewKeyPressed(MyKeys.F2))
+
+                if (MyAPIGateway.Input.IsNewKeyPressed(MyKeys.T))
                 {
                     if (MyAPIGateway.Input.IsAnyShiftKeyPressed())
                     {
@@ -689,14 +749,16 @@ namespace klime.Visual
                         //}
                         //else
                         //{
-                        viewState = ViewState.GoToIdle;
+                        //requestPaperDoll = RequestPaperDoll.Off;
+                        viewState = ViewState.GoToIdleWC;
                         //}
                     }
-                    else if (MyAPIGateway.Input.IsKeyPress(MyKeys.OemTilde))
+                    else if (MyAPIGateway.Input.IsKeyPress(MyKeys.R))
                     {
-                        if (viewState == ViewState.Idle)
+                        if (viewState == ViewState.GoToIdleWC || viewState == ViewState.Idle)
                         {
                             viewState = ViewState.Searching;
+
                         }
                         else
                         {
@@ -705,16 +767,31 @@ namespace klime.Visual
                     }
                     else
                     {
-                        if (viewState == ViewState.Idle)
+                        if (viewState == ViewState.GoToIdleWC)
                         {
                             viewState = ViewState.SearchingWC;
+
                         }
                         else
                         {
                             viewState = ViewState.GoToIdleWC;
+                            //requestPaperDoll = RequestPaperDoll.On;
                         }
                     }
+
+                    if (requestPaperDoll == RequestPaperDoll.On)
+                    {
+                        requestPaperDoll = RequestPaperDoll.Off;
+                        MyAPIGateway.Utilities.ShowNotification("PAPER DOLL DISABLED", 1000, "Red");
+                    }
+                    else
+                    {
+                        requestPaperDoll = RequestPaperDoll.On;
+                        MyAPIGateway.Utilities.ShowNotification("PAPER DOLL ENABLED", 1000, "Green");
+                    }
                 }
+
+
             }
 
 
@@ -729,8 +806,8 @@ namespace klime.Visual
             {
                 searchEnts.Clear();
 
-                BoundingSphereD sphere = new BoundingSphereD(currentCamera.WorldMatrix.Translation , maxRange);
-                MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref sphere , searchEnts);
+                BoundingSphereD sphere = new BoundingSphereD(currentCamera.WorldMatrix.Translation, maxRange);
+                MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref sphere, searchEnts);
 
                 MyCubeGrid targetGrid = null;
                 double currentSmallestAngle = maxAngleTolerance;
@@ -742,7 +819,7 @@ namespace klime.Visual
                         continue;
                     }
 
-                    var group = MyAPIGateway.GridGroups.GetGridGroup(GridLinkTypeEnum.Physical , grid);
+                    var group = MyAPIGateway.GridGroups.GetGridGroup(GridLinkTypeEnum.Physical, grid);
                     var gridList = new List<IMyCubeGrid>();
 
                     if (group != null)
@@ -766,7 +843,7 @@ namespace klime.Visual
                     Vector3D toVec = Vector3D.Normalize(grid.GetPhysicalGroupAABB().Center - currentCamera.WorldMatrix.Translation);
                     Vector3D forVec = currentCamera.WorldMatrix.Forward;
 
-                    var angle = AngleBetweenVectors(toVec , forVec , currentCamera.WorldMatrix.Up);
+                    var angle = AngleBetweenVectors(toVec, forVec, currentCamera.WorldMatrix.Up);
                     //DEBUG
                     //MyAPIGateway.Utilities.ShowNotification($"Angle: {angle}", 1, "White");
                     if (angle <= currentSmallestAngle)
@@ -778,7 +855,7 @@ namespace klime.Visual
 
                 if (targetGrid != null)
                 {
-                    EntVis entVis = new EntVis(targetGrid , -0.12 , 0.03 , 1.1);
+                    EntVis entVis = new EntVis(targetGrid, -0.12, 0.03, 1.1);
                     allVis.Add(entVis);
                     viewState = ViewState.Locked;
                 }
@@ -793,8 +870,8 @@ namespace klime.Visual
                 allVis.Clear();
                 searchEnts.Clear();
 
-                BoundingSphereD sphere = new BoundingSphereD(currentCamera.WorldMatrix.Translation , maxRange);
-                MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref sphere , searchEnts);
+                BoundingSphereD sphere = new BoundingSphereD(currentCamera.WorldMatrix.Translation, maxRange);
+                MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref sphere, searchEnts);
 
                 MyCubeGrid targetGrid = null;
                 double currentSmallestAngle = maxAngleTolerance;
@@ -806,7 +883,7 @@ namespace klime.Visual
                         continue;
                     }
 
-                    var group = MyAPIGateway.GridGroups.GetGridGroup(GridLinkTypeEnum.Physical , grid);
+                    var group = MyAPIGateway.GridGroups.GetGridGroup(GridLinkTypeEnum.Physical, grid);
                     var gridList = new List<IMyCubeGrid>();
 
                     if (group != null)
@@ -830,7 +907,7 @@ namespace klime.Visual
                     Vector3D toVec = Vector3D.Normalize(grid.GetPhysicalGroupAABB().Center - currentCamera.WorldMatrix.Translation);
                     Vector3D forVec = currentCamera.WorldMatrix.Forward;
 
-                    var angle = AngleBetweenVectors(toVec , forVec , currentCamera.WorldMatrix.Up);
+                    var angle = AngleBetweenVectors(toVec, forVec, currentCamera.WorldMatrix.Up);
                     //DEBUG
                     //MyAPIGateway.Utilities.ShowNotification($"Angle: {angle}", 1, "White");
                     if (angle <= currentSmallestAngle)
@@ -848,13 +925,13 @@ namespace klime.Visual
 
                 if (controlEnt2 != null && wcAPI != null)
                 {
-                    var ent = wcAPI.GetAiFocus(controlEnt2 , 0);
+                    var ent = wcAPI.GetAiFocus(controlEnt2, 0);
                     if (ent != null)
                     {
                         MyCubeGrid cGrid = ent as MyCubeGrid;
                         if (cGrid != null && cGrid.Physics != null)
                         {
-                            EntVis entVis2 = new EntVis(cGrid , 0.10 , 0.065 , 0.5);
+                            EntVis entVis2 = new EntVis(cGrid, 0.10, 0.065, 0.5);
                             allVis.Add(entVis2);
                             //MyAPIGateway.Utilities.ShowNotification($"added: {entVis2}", 1000, "White");
                             //viewState = ViewState.Locked;                
@@ -863,7 +940,7 @@ namespace klime.Visual
                 }
                 if (targetGrid != null)
                 {
-                    EntVis entVis = new EntVis(targetGrid , -0.13 , 0.065 , 0.5);
+                    EntVis entVis = new EntVis(targetGrid, -0.13, 0.065, 0.5);
                     allVis.Add(entVis);
                     //MyAPIGateway.Utilities.ShowNotification($"added: {entVis}", 1000, "White");
                 }
@@ -881,8 +958,8 @@ namespace klime.Visual
             {
                 searchEnts.Clear();
 
-                BoundingSphereD sphere = new BoundingSphereD(currentCamera.WorldMatrix.Translation , maxRange);
-                MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref sphere , searchEnts);
+                BoundingSphereD sphere = new BoundingSphereD(currentCamera.WorldMatrix.Translation, maxRange);
+                MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref sphere, searchEnts);
 
                 List<MyCubeGrid> leftGrids = new List<MyCubeGrid>();
                 List<MyCubeGrid> rightGrids = new List<MyCubeGrid>();
@@ -895,7 +972,7 @@ namespace klime.Visual
                     }
 
 
-                    var group = MyAPIGateway.GridGroups.GetGridGroup(GridLinkTypeEnum.Physical , grid);
+                    var group = MyAPIGateway.GridGroups.GetGridGroup(GridLinkTypeEnum.Physical, grid);
                     var gridList = new List<IMyCubeGrid>();
 
                     if (group != null)
@@ -939,7 +1016,7 @@ namespace klime.Visual
                 double leftYOffset = -0.06;
                 foreach (var leftGrid in leftGrids)
                 {
-                    EntVis leftEntVis = new EntVis(leftGrid , leftXOffset , leftYOffset , -1.1);
+                    EntVis leftEntVis = new EntVis(leftGrid, leftXOffset, leftYOffset, -1.1);
                     allVis.Add(leftEntVis);
                     leftYOffset += 0.03;
                 }
@@ -948,7 +1025,7 @@ namespace klime.Visual
                 double rightYOffset = -0.06;
                 foreach (var rightGrid in rightGrids)
                 {
-                    EntVis rightEntVis = new EntVis(rightGrid , rightXOffset , rightYOffset , 1.1);
+                    EntVis rightEntVis = new EntVis(rightGrid, rightXOffset, rightYOffset, 1.1);
                     allVis.Add(rightEntVis);
                     rightYOffset += 0.03;
                 }
@@ -965,7 +1042,7 @@ namespace klime.Visual
 
             if (viewState == ViewState.SearchingWC)
             {
-                
+
                 MyEntity controlEnt = null;
                 if (MyAPIGateway.Session.Player.Controller?.ControlledEntity?.Entity is IMyCockpit)
                 {
@@ -975,13 +1052,14 @@ namespace klime.Visual
 
                 if (controlEnt != null && wcAPI != null)
                 {
-                    var ent = wcAPI.GetAiFocus(controlEnt , 0);
+                    var ent = wcAPI.GetAiFocus(controlEnt, 0);
                     if (ent != null)
-                    { 
+                    {
                         MyCubeGrid cGrid = ent as MyCubeGrid;
+
                         if (cGrid != null && cGrid.Physics != null)
                         {
-                            EntVis entVis = new EntVis(cGrid , 0.12 , 0.03 , 1.1);
+                            EntVis entVis = new EntVis(cGrid, 0.12, 0.03, 1.1);
                             allVis.Add(entVis);
                             viewState = ViewState.Locked;
                         }
@@ -1025,7 +1103,8 @@ namespace klime.Visual
                 }
 
                 allVis.Clear();
-                viewState = ViewState.SearchingWC;
+                viewState = requestPaperDoll == RequestPaperDoll.On ? ViewState.SearchingWC : ViewState.Idle;
+
             }
             //MyAPIGateway.Utilities.ShowNotification(viewState.ToString() , 1 , "white");
             //display viewstate
@@ -1034,67 +1113,120 @@ namespace klime.Visual
 
         public override void Draw()
         {
-            
-                if (MyAPIGateway.Utilities.IsDedicated)
-                {
-                    return;
-                }
-            
-            
-                IMyCharacter charac = MyAPIGateway.Session.Player?.Character; //No player character - return
-                if (charac == null)
-                {
-                    return;
-                }
-            
-                IMyCamera currentCamera = MyAPIGateway.Session.Camera;
-                if (currentCamera == null)
-                {
-                    return;
-                }
-           
-            
+
+            if (MyAPIGateway.Utilities.IsDedicated)
+            {
+                return;
+            }
+
+
+            IMyCharacter charac = MyAPIGateway.Session.Player?.Character; //No player character - return
+            if (charac == null)
+            {
+                return;
+            }
+
+            IMyCamera currentCamera = MyAPIGateway.Session.Camera;
+            if (currentCamera == null)
+            {
+                return;
+            }
+
+
             if (viewState == ViewState.Locked)
             {
-                    //DEBUG
-                    //MyAPIGateway.Utilities.ShowNotification($"Current locked grids: {allVis.Count}", 1, "White");
+                //DEBUG
+                //MyAPIGateway.Utilities.ShowNotification($"Current locked grids: {allVis.Count}", 1, "White");
 
-                    for (int i = allVis.Count - 1 ; i >= 0 ; i--)
+                for (int i = allVis.Count - 1; i >= 0; i--)
+                {
+
+                    allVis[i].Update();
+                    if (allVis[i].isClosed)
                     {
+                        allVis.RemoveAtFast(i);
+                    }
+                }
 
-                        allVis[ i ].Update();
-                        if (allVis[ i ].isClosed)
+
+
+
+                MyEntity controlEnt = null;
+                if (MyAPIGateway.Session.Player.Controller?.ControlledEntity?.Entity is IMyCockpit)
+                {
+                    IMyCockpit cockpit = MyAPIGateway.Session.Player.Controller?.ControlledEntity?.Entity as IMyCockpit;
+                    controlEnt = cockpit.CubeGrid as MyEntity;
+                }
+                if (controlEnt != null && wcAPI != null)
+                {
+                    var ent = wcAPI.GetAiFocus(controlEnt, 0);
+                    if (ent != null)
+                    {
+                        MyCubeGrid cGrid = ent as MyCubeGrid;
+
+                        if (cGrid != null && cGrid.Physics != null)
                         {
-                            allVis.RemoveAt(i);
+                            // EntVis entVis = new EntVis(cGrid, 0.12, 0.03, 1.1);
+                            bool isTracked = false;
+                            foreach (var vis in allVis)
+                            {
+                                if (vis.realGrid.EntityId == cGrid.EntityId)
+                                {
+                                    isTracked = true;
+                                    break;
+                                }
+                            }
+
+                            if (!isTracked)
+                            {
+                                foreach (var entVis in allVis)
+                                {
+                                    entVis.Close();
+                                }
+
+                                allVis.Clear();
+                                EntVis vis = new EntVis(cGrid, 0.12, 0.03, 1.1);
+                                allVis.Add(vis);
+                            }
                         }
                     }
-
-                    if (allVis.Count == 0)
+                    else if (ent == null)
                     {
-                        viewState = ViewState.GoToIdle;
+                        foreach (var entVis in allVis)
+                        {
+                            entVis.Close();
+                        }
+                        allVis.Clear();
                     }
+                }
+
+
+                if (allVis.Count == 0 || requestPaperDoll == RequestPaperDoll.Off)
+                {
+                    viewState = ViewState.GoToIdle;
+                }
             }
         }
 
         private void NetworkHandler(ushort arg1, byte[] arg2, ulong incomingSteamID, bool arg4)
         {
-            
-                Packet packet = MyAPIGateway.Utilities.SerializeFromBinary<Packet>(arg2);
-                if (packet != null)
+
+            Packet packet = MyAPIGateway.Utilities.SerializeFromBinary<Packet>(arg2);
+            if (packet != null)
+            {
+                if (MyAPIGateway.Session.IsServer)
                 {
-                    if (MyAPIGateway.Session.IsServer)
+                    UpdateGridPacket updateGridPacket = packet as UpdateGridPacket;
+                    if (updateGridPacket != null)
                     {
-                        UpdateGridPacket updateGridPacket = packet as UpdateGridPacket;
-                        if (updateGridPacket != null)
-                        {
-                            UpdateServerTracker(incomingSteamID, updateGridPacket);
-                        }
+                        UpdateServerTracker(incomingSteamID, updateGridPacket);
                     }
                 }
-            
+            }
+
         }
 
-        private void FeedbackHandler(ushort arg1 , byte[ ] arg2 , ulong arg3 , bool arg4)
+        private void FeedbackHandler(ushort arg1, byte[] arg2, ulong arg3, bool arg4)
         {
 
             Packet packet = MyAPIGateway.Utilities.SerializeFromBinary<Packet>(arg2);
@@ -1115,7 +1247,7 @@ namespace klime.Visual
 
         }
 
-        private void UpdateServerTracker(ulong steamID , UpdateGridPacket updateGridPacket)
+        private void UpdateServerTracker(ulong steamID, UpdateGridPacket updateGridPacket)
         {
             if (updateGridPacket.regUpdateType == RegUpdateType.Add)
             {
@@ -1127,7 +1259,7 @@ namespace klime.Visual
                         if (cubeGrid != null)
                         {
                             cubeGrid.OnBlockRemoved += ServerBlockRemoved;
-                            serverTracker[ steamID ].Add(cubeGrid);
+                            serverTracker[steamID].Add(cubeGrid);
                         }
                     }
                 }
@@ -1144,7 +1276,7 @@ namespace klime.Visual
                         }
                     }
 
-                    serverTracker.Add(steamID , gridTracker);
+                    serverTracker.Add(steamID, gridTracker);
                 }
             }
 
@@ -1158,7 +1290,7 @@ namespace klime.Visual
                         if (cubeGrid != null)
                         {
                             cubeGrid.OnBlockRemoved -= ServerBlockRemoved;
-                            serverTracker[ steamID ].Remove(cubeGrid);
+                            serverTracker[steamID].Remove(cubeGrid);
                         }
                     }
                 }
@@ -1172,15 +1304,15 @@ namespace klime.Visual
             var dmgGrid = obj.CubeGrid;
             foreach (var steamID in serverTracker.Keys)
             {
-                if (serverTracker[ steamID ] != null && serverTracker[ steamID ].Count > 0)
+                if (serverTracker[steamID] != null && serverTracker[steamID].Count > 0)
                 {
-                    foreach (var checkGrid in serverTracker[ steamID ])
+                    foreach (var checkGrid in serverTracker[steamID])
                     {
                         if (checkGrid.EntityId == dmgGrid.EntityId)
                         {
-                            FeedbackDamagePacket feedbackDamagePacket = new FeedbackDamagePacket(dmgGrid.EntityId , obj.Position);
+                            FeedbackDamagePacket feedbackDamagePacket = new FeedbackDamagePacket(dmgGrid.EntityId, obj.Position);
                             var byteArray = MyAPIGateway.Utilities.SerializeToBinary(feedbackDamagePacket);
-                            MyAPIGateway.Multiplayer.SendMessageTo(feedbackNetID , byteArray , steamID);
+                            MyAPIGateway.Multiplayer.SendMessageTo(feedbackNetID, byteArray, steamID);
                             break;
                         }
                     }
@@ -1189,16 +1321,16 @@ namespace klime.Visual
 
         }
 
-        public double AngleBetweenVectors(Vector3D vectorA , Vector3D vectorB , Vector3D planeNormal , bool useNegative = false)
+        public double AngleBetweenVectors(Vector3D vectorA, Vector3D vectorB, Vector3D planeNormal, bool useNegative = false)
         {
 
             vectorA = Vector3D.Normalize(vectorA);
             vectorB = Vector3D.Normalize(vectorB);
             planeNormal = Vector3D.Normalize(planeNormal);
 
-            PlaneD plane = new PlaneD(Vector3D.Zero , planeNormal);
-            double angle = MyUtils.GetAngleBetweenVectors(vectorA , vectorB);
-            double sign = Vector3D.Dot(plane.Normal , vectorB);
+            PlaneD plane = new PlaneD(Vector3D.Zero, planeNormal);
+            double angle = MyUtils.GetAngleBetweenVectors(vectorA, vectorB);
+            double sign = Vector3D.Dot(plane.Normal, vectorB);
 
             if (useNegative)
             {
@@ -1214,17 +1346,17 @@ namespace klime.Visual
 
         private bool ValidInput()
         {
-            
+
             if (MyAPIGateway.Session.CameraController != null && !MyAPIGateway.Gui.ChatEntryVisible && !MyAPIGateway.Gui.IsCursorVisible
                 && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.None)
             {
                 return true;
             }
             return false;
-                
+
         }
         private bool IsAdmin(IMyPlayer sender)
-        { 
+        {
             if (sender == null)
             {
                 return false;
@@ -1254,7 +1386,7 @@ namespace klime.Visual
 
             MyAPIGateway.Multiplayer.UnregisterSecureMessageHandler(feedbackNetID, FeedbackHandler);
 
-            if(wcAPI != null)
+            if (wcAPI != null)
             {
                 wcAPI.Unload();
             }
