@@ -474,17 +474,17 @@ namespace klime.Visual
                         }
                         else
                         {
-                            viewState = ViewState.GoToIdle;
+                            viewState = ViewState.GoToIdleWC;
                         }
                     }
                     else
                     {
-                        viewState = ViewState.GoToIdle;
+                        viewState = ViewState.GoToIdleWC;
                     }
                 }
                 else
                 {
-                    viewState = ViewState.GoToIdle;
+                    viewState = ViewState.GoToIdleWC;
                 }
             }
             if (viewState == ViewState.GoToIdle || viewState == ViewState.GoToIdleWC)
@@ -560,7 +560,7 @@ namespace klime.Visual
                         allVis.Clear();
                     }
                 }
-                if (allVis.Count == 0 || requestPaperDoll == RequestPaperDoll.Off) viewState = ViewState.GoToIdle;
+                if (allVis.Count == 0 || requestPaperDoll == RequestPaperDoll.Off) viewState = ViewState.GoToIdleWC;
             }
         }
 
